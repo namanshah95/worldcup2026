@@ -184,6 +184,12 @@ class AdminLinkFixtureRequest(BaseModel):
     match_id: str = Field(min_length=1)
 
 
+class AdminRescorePickEmRequest(BaseModel):
+    home_score: Optional[int] = Field(default=None, ge=0, le=20)
+    away_score: Optional[int] = Field(default=None, ge=0, le=20)
+    refresh_from_api: bool = True
+
+
 CaptainResponse.model_rebuild()
 BingoBoardResponse.model_rebuild()
 

@@ -265,6 +265,18 @@ class TheStatsApiClient:
             raise
 
 
+def match_player_name(roster_name: str, api_name: str) -> bool:
+    roster = normalize_name(roster_name)
+    api = normalize_name(api_name)
+    if not roster or not api:
+        return False
+    if roster == api or roster in api or api.endswith(f" {roster}"):
+        return True
+    roster_last = roster.split()[-1]
+    api_last = api.split()[-1]
+    return len(roster_last) >= 3 and roster_last == api_last
+
+
 def build_player_stats(
     match: dict,
     player_rows: list[dict],
@@ -298,8 +310,10 @@ def build_player_stats(
         internal = id_to_internal.get(str(ext_id))
         if not internal:
             player_name = ps.get("player_name") or ""
-            key = normalize_name(player_name.split()[-1]) if player_name else ""
-            internal = name_to_internal.get(key) or name_to_internal.get(normalize_name(player_name))
+            for row in player_rows:
+                if player_name and match_player_name(row["name"], player_name):
+                    internal = row["id"]
+                    break
         if not internal:
             continue
 
@@ -321,8 +335,10 @@ def build_player_stats(
             if ext_id and str(ext_id) in id_to_internal:
                 internal = id_to_internal[str(ext_id)]
             elif name:
-                key = normalize_name(name.split()[-1])
-                internal = name_to_internal.get(key)
+                for row in player_rows:
+                    if match_player_name(row["name"], name):
+                        internal = row["id"]
+                        break
             if internal:
                 stats[internal]["goals"] += 1
                 if ext_id:

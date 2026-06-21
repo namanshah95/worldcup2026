@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import httpx
@@ -11,7 +11,7 @@ import httpx
 from app.config import settings
 from app.database import get_supabase
 from app.services.game_schedule import kickoff_date, link_search_dates, parse_kickoff, utcnow
-from app.services.scoring import process_game_finished
+from app.services.scoring import process_game_finished, rescore_captains_for_game, rescore_pick_ems_for_game
 from app.services.sportmonks import (
     SportmonksClient,
     FINISHED_STATE_IDS,
@@ -93,11 +93,31 @@ def _sportmonks_current_half(state_id: int, prev_state_id: Optional[int]) -> int
     return 1
 
 
+def _game_in_stat_backfill_window(game: dict, now: datetime) -> bool:
+    """Keep syncing recently finished games so late-arriving goal stats can backfill."""
+    if game.get("status") != "finished":
+        return False
+    kickoff = parse_kickoff(game["kickoff_at"])
+    return now < kickoff + timedelta(hours=4)
+
+
+def _player_match_stats_changed(before: dict[str, dict], players: list[dict], stats: dict[str, dict]) -> bool:
+    for row in players:
+        pid = row["id"]
+        previous = before.get(pid, {})
+        current = stats.get(pid, {})
+        if previous.get("goals") != current.get("goals") or previous.get("assists") != current.get("assists"):
+            return True
+    return False
+
+
 async def _sync_sportmonks_game(game: dict, fixture: dict) -> None:
     db = get_supabase()
     state_id = fixture.get("state_id") or (fixture.get("state") or {}).get("id", 1)
     prev_state = game.get("sportmonks_last_state_id")
     prev_status = game["status"]
+    prev_home_score = game.get("home_score", 0)
+    prev_away_score = game.get("away_score", 0)
 
     parsed_scores = parse_sportmonks_scores(fixture)
     if parsed_scores is not None:
@@ -122,6 +142,9 @@ async def _sync_sportmonks_game(game: dict, fixture: dict) -> None:
     ).eq("id", game["id"]).execute()
 
     players = db.table("players").select("*").eq("game_id", game["id"]).execute().data
+    stats_before = {
+        p["id"]: {"goals": p.get("goals", 0), "assists": p.get("assists", 0)} for p in players
+    }
     if players:
         stats = build_sportmonks_player_stats(fixture, players)
         for pid, ps in stats.items():
@@ -133,10 +156,21 @@ async def _sync_sportmonks_game(game: dict, fixture: dict) -> None:
             if ps.get("sportmonks_player_id"):
                 row_update["sportmonks_player_id"] = ps["sportmonks_player_id"]
             db.table("players").update(row_update).eq("id", pid).execute()
+    else:
+        stats = {}
 
     if status == "finished" and prev_status != "finished":
         process_game_finished(game["id"])
         logger.info("Game %s finished — pick'em and captain points awarded", game["id"])
+    elif status == "finished":
+        score_changed = (home_score, away_score) != (prev_home_score, prev_away_score)
+        stats_changed = _player_match_stats_changed(stats_before, players, stats)
+        if stats_changed:
+            rescore_captains_for_game(game["id"])
+            logger.info("Game %s captain points rescored after stat backfill", game["id"])
+        if score_changed:
+            rescore_pick_ems_for_game(game["id"])
+            logger.info("Game %s pick'em points rescored after score backfill", game["id"])
 
 
 async def link_fixtures_sportmonks() -> dict:
@@ -217,7 +251,9 @@ async def sync_sportmonks() -> None:
     games = [
         g
         for g in db.table("games").select("*").execute().data
-        if game_external_match_id(g) and g.get("status") != "finished" and g.get("sportmonks_fixture_id")
+        if game_external_match_id(g)
+        and g.get("sportmonks_fixture_id")
+        and (g.get("status") != "finished" or _game_in_stat_backfill_window(g, utcnow()))
     ]
     if not games:
         return
@@ -247,6 +283,8 @@ async def _sync_thestats_game(game: dict, match: dict, live: dict, player_stats:
 
     db = get_supabase()
     prev_status = game["status"]
+    prev_home_score = game.get("home_score", 0)
+    prev_away_score = game.get("away_score", 0)
     live_meta = live.get("meta") if live else None
     status, current_half = map_match_status(match, live_meta)
     parsed_scores = parse_thestats_scores(match, live_meta)
@@ -265,6 +303,9 @@ async def _sync_thestats_game(game: dict, match: dict, live: dict, player_stats:
     ).eq("id", game["id"]).execute()
 
     players = db.table("players").select("*").eq("game_id", game["id"]).execute().data
+    stats_before = {
+        p["id"]: {"goals": p.get("goals", 0), "assists": p.get("assists", 0)} for p in players
+    }
     if players:
         stats = build_thestats_player_stats(match, players, player_stats, timeline, status)
         for pid, ps in stats.items():
@@ -276,10 +317,21 @@ async def _sync_thestats_game(game: dict, match: dict, live: dict, player_stats:
             if ps.get("external_player_id"):
                 row_update["external_player_id"] = ps["external_player_id"]
             db.table("players").update(row_update).eq("id", pid).execute()
+    else:
+        stats = {}
 
     if status == "finished" and prev_status != "finished":
         process_game_finished(game["id"])
         logger.info("Game %s finished — pick'em and captain points awarded", game["id"])
+    elif status == "finished":
+        score_changed = (home_score, away_score) != (prev_home_score, prev_away_score)
+        stats_changed = _player_match_stats_changed(stats_before, players, stats)
+        if stats_changed:
+            rescore_captains_for_game(game["id"])
+            logger.info("Game %s captain points rescored after stat backfill", game["id"])
+        if score_changed:
+            rescore_pick_ems_for_game(game["id"])
+            logger.info("Game %s pick'em points rescored after score backfill", game["id"])
 
 
 async def link_fixtures_thestatsapi() -> dict:
@@ -381,11 +433,15 @@ async def sync_thestatsapi() -> None:
         await link_fixtures_thestatsapi()
 
     now = utcnow()
-    games = [
-        g
-        for g in all_games
-        if game_external_match_id(g) and g.get("status") != "finished" and _should_poll_thestats_game(g, now)
-    ]
+    games = []
+    for g in all_games:
+        if not game_external_match_id(g):
+            continue
+        if g.get("status") != "finished":
+            if _should_poll_thestats_game(g, now):
+                games.append(g)
+        elif _game_in_stat_backfill_window(g, now):
+            games.append(g)
     if not games:
         return
 
@@ -429,6 +485,59 @@ async def sync_thestatsapi() -> None:
                 )
             except Exception as exc:
                 logger.warning("Failed to sync game %s: %s", game["id"], exc)
+
+
+async def refresh_game_from_api(game_id: str) -> dict:
+    """Fetch latest scores and player stats from the sports API."""
+    db = get_supabase()
+    game = db.table("games").select("*").eq("id", game_id).single().execute().data
+    result = {
+        "game_id": game_id,
+        "provider": settings.sports_api_provider,
+        "synced": False,
+    }
+
+    async with httpx.AsyncClient() as http:
+        if settings.sportmonks_enabled and game.get("sportmonks_fixture_id"):
+            sm = SportmonksClient()
+            fixture = await sm.get_fixture(http, int(game["sportmonks_fixture_id"]))
+            if fixture:
+                await _sync_sportmonks_game(game, fixture)
+                result["synced"] = True
+        elif settings.thestatsapi_enabled and game_external_match_id(game):
+            client = TheStatsApiClient()
+            match_id = game_external_match_id(game)
+            match = await client.get_match(http, match_id)
+            if match:
+                api_status = (match.get("status") or "scheduled").lower()
+                live: dict = {}
+                player_stats: list = []
+                timeline: list = []
+                if api_status == "live":
+                    live = await client.get_live_stats(http, match_id)
+                if api_status in ("live", "finished"):
+                    player_stats = await client.get_player_stats(http, match_id)
+                    timeline = await client.get_timeline(http, match_id)
+                await _sync_thestats_game(game, match, live, player_stats, timeline)
+                result["synced"] = True
+
+    game = db.table("games").select("home_score, away_score, status").eq("id", game_id).single().execute().data
+    players = db.table("players").select("id, name, goals, assists, clean_sheet").eq("game_id", game_id).execute().data
+    result["final_score"] = {"home": game["home_score"], "away": game["away_score"]}
+    result["players"] = players
+    return result
+
+
+async def refresh_game_scores(game_id: str) -> dict:
+    """Backwards-compatible wrapper that refreshes scores and player stats."""
+    refreshed = await refresh_game_from_api(game_id)
+    return {
+        "game_id": game_id,
+        "previous": None,
+        "updated": refreshed.get("final_score"),
+        "provider": refreshed.get("provider"),
+        "players": refreshed.get("players"),
+    }
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

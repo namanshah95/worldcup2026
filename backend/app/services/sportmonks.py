@@ -61,6 +61,19 @@ def team_matches(expected: str, actual: str) -> bool:
     return any(alias in actual_norm or actual_norm in alias for alias in aliases)
 
 
+def match_player_name(roster_name: str, api_name: str) -> bool:
+    """Match roster short names (e.g. Yamal) to API display names (e.g. Lamine Yamal)."""
+    roster = normalize_name(roster_name)
+    api = normalize_name(api_name)
+    if not roster or not api:
+        return False
+    if roster == api or roster in api or api.endswith(f" {roster}"):
+        return True
+    roster_last = roster.split()[-1]
+    api_last = api.split()[-1]
+    return len(roster_last) >= 3 and roster_last == api_last
+
+
 class SportmonksClient:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.sports_api_key
@@ -144,26 +157,43 @@ def parse_scores(fixture: dict) -> Optional[tuple[int, int]]:
     if not home or not away:
         return None
 
-    home_id = home["id"]
-    away_id = away["id"]
-    home_score: Optional[int] = None
-    away_score: Optional[int] = None
+    home_id = str(home["id"])
+    away_id = str(away["id"])
+    preferred = ("CURRENT", "2ND_HALF", "2ND HALF")
 
-    for entry in fixture.get("scores") or []:
-        if entry.get("description") != "CURRENT":
-            continue
-        participant_id = entry.get("participant_id")
-        goals = (entry.get("score") or {}).get("goals")
-        if goals is None:
-            continue
-        if participant_id == home_id:
-            home_score = int(goals)
-        elif participant_id == away_id:
-            away_score = int(goals)
+    def normalize_desc(value: str) -> str:
+        return (value or "").upper().replace(" ", "_")
 
-    if home_score is None or away_score is None:
-        return None
-    return home_score, away_score
+    def parse_description(target_desc: str) -> Optional[tuple[int, int]]:
+        target = normalize_desc(target_desc)
+        home_score: Optional[int] = None
+        away_score: Optional[int] = None
+        for entry in fixture.get("scores") or []:
+            if normalize_desc(entry.get("description") or "") != target:
+                continue
+            score_obj = entry.get("score") or {}
+            goals = score_obj.get("goals")
+            if goals is None:
+                continue
+            goals = int(goals)
+            participant = (score_obj.get("participant") or "").lower()
+            participant_id = entry.get("participant_id")
+            pid = str(participant_id) if participant_id is not None else None
+
+            if participant == "home" or pid == home_id:
+                home_score = goals
+            elif participant == "away" or pid == away_id:
+                away_score = goals
+
+        if home_score is None or away_score is None:
+            return None
+        return home_score, away_score
+
+    for desc in preferred:
+        parsed = parse_description(desc)
+        if parsed is not None:
+            return parsed
+    return None
 
 
 def map_state(state_id: int) -> str:
@@ -219,15 +249,17 @@ def build_player_stats(fixture: dict, player_rows: list[dict]) -> dict[str, dict
         if scorer_sm and int(scorer_sm) in sm_to_internal:
             stats[sm_to_internal[int(scorer_sm)]]["goals"] += 1
         elif event.get("player_name"):
-            key = normalize_name(event["player_name"].split()[-1])
-            if key in name_to_internal:
-                stats[name_to_internal[key]]["goals"] += 1
+            for row in player_rows:
+                if match_player_name(row["name"], event["player_name"]):
+                    stats[row["id"]]["goals"] += 1
+                    break
         if assist_sm and int(assist_sm) in sm_to_internal:
             stats[sm_to_internal[int(assist_sm)]]["assists"] += 1
         elif event.get("related_player_name"):
-            key = normalize_name(event["related_player_name"].split()[-1])
-            if key in name_to_internal:
-                stats[name_to_internal[key]]["assists"] += 1
+            for row in player_rows:
+                if match_player_name(row["name"], event["related_player_name"]):
+                    stats[row["id"]]["assists"] += 1
+                    break
 
     state_id = fixture.get("state_id") or (fixture.get("state") or {}).get("id")
     if state_id in FINISHED_STATE_IDS:
