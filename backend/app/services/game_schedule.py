@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 FIRST_HALF_MINUTES = 45
 HALFTIME_BREAK_MINUTES = 15
@@ -15,6 +15,10 @@ def parse_kickoff(kickoff_at: str | datetime) -> datetime:
     if kickoff.tzinfo is None:
         kickoff = kickoff.replace(tzinfo=timezone.utc)
     return kickoff
+
+
+def kickoff_date(kickoff_at: str | datetime) -> date:
+    return parse_kickoff(kickoff_at).date()
 
 
 def utcnow() -> datetime:
