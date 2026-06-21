@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     sportmonks_season_id: int = 26618
     thestatsapi_competition_id: str = ""
     thestatsapi_season_id: str = ""
-    sports_sync_interval: int = 30
+    sports_sync_interval: int = 60
+    thestatsapi_max_requests_per_minute: int = 25
     attendance_bonus_points: int = 4
     admin_secret: str = "admin-secret-change-me"
 

@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Optional
 
 import httpx
 
 from app.config import settings
 from app.database import get_supabase
-from app.services.game_schedule import kickoff_date, link_search_dates
+from app.services.game_schedule import kickoff_date, link_search_dates, parse_kickoff, utcnow
 from app.services.scoring import process_game_finished
 from app.services.sportmonks import (
     SportmonksClient,
@@ -31,6 +32,36 @@ from app.services.thestatsapi import (
 )
 
 logger = logging.getLogger(__name__)
+
+_sync_lock = asyncio.Lock()
+_thestats_last_poll: dict[str, datetime] = {}
+
+
+def _thestats_poll_interval_seconds(game: dict, now: datetime) -> Optional[int]:
+    """Minimum seconds between API polls for a game, or None to skip this cycle."""
+    status = game.get("status", "scheduled")
+    if status == "finished":
+        return None
+    if status in ("live", "halftime"):
+        return 30
+
+    kickoff = parse_kickoff(game["kickoff_at"])
+    seconds_until = (kickoff - now).total_seconds()
+    if seconds_until > 3600:
+        return None
+    if seconds_until > 0:
+        return 120
+    return 30
+
+
+def _should_poll_thestats_game(game: dict, now: datetime) -> bool:
+    interval = _thestats_poll_interval_seconds(game, now)
+    if interval is None:
+        return False
+    last = _thestats_last_poll.get(game["id"])
+    if last and (now - last).total_seconds() < interval:
+        return False
+    return True
 
 
 def game_external_match_id(game: dict) -> Optional[str]:
@@ -337,7 +368,12 @@ async def sync_thestatsapi() -> None:
     if any(_game_needs_link(g) for g in all_games):
         await link_fixtures_thestatsapi()
 
-    games = [g for g in all_games if game_external_match_id(g) and g.get("status") != "finished"]
+    now = utcnow()
+    games = [
+        g
+        for g in all_games
+        if game_external_match_id(g) and g.get("status") != "finished" and _should_poll_thestats_game(g, now)
+    ]
     if not games:
         return
 
@@ -361,7 +397,17 @@ async def sync_thestatsapi() -> None:
                     player_stats = await client.get_player_stats(http, match_id)
                     timeline = await client.get_timeline(http, match_id)
                 await _sync_thestats_game(game, match, live, player_stats, timeline)
+                _thestats_last_poll[game["id"]] = utcnow()
             except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 429:
+                    retry_after = TheStatsApiClient._retry_after_seconds(exc.response, 0)
+                    logger.warning(
+                        "TheStatsAPI rate limited while syncing %s, backing off %ss",
+                        game["id"],
+                        retry_after,
+                    )
+                    await asyncio.sleep(retry_after)
+                    break
                 body = exc.response.text[:300] if exc.response.text else ""
                 logger.warning(
                     "TheStatsAPI HTTP error for game %s: %s %s",
@@ -404,10 +450,11 @@ def link_fixture_manual(game_id: str, match_id: str) -> dict:
 
 
 async def sync_match_statuses() -> None:
-    if settings.thestatsapi_enabled:
-        await sync_thestatsapi()
-    elif settings.sportmonks_enabled:
-        await sync_sportmonks()
+    async with _sync_lock:
+        if settings.thestatsapi_enabled:
+            await sync_thestatsapi()
+        elif settings.sportmonks_enabled:
+            await sync_sportmonks()
 
 
 async def run_sync_loop(interval_seconds: Optional[int] = None) -> None:

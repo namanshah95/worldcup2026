@@ -58,6 +58,27 @@ class TheStatsApiClientTests(unittest.IsolatedAsyncioTestCase):
             result = await client.get_live_stats(http, "mt_732525756")
         self.assertEqual(result, {})
 
+    async def test_get_retries_after_429(self):
+        client = TheStatsApiClient(api_key="test-key")
+        http = AsyncMock()
+        rate_limited = MagicMock()
+        rate_limited.status_code = 429
+        rate_limited.headers = {"Retry-After": "1"}
+        rate_limited.json.return_value = {}
+        rate_limited.raise_for_status.return_value = None
+
+        ok = MagicMock()
+        ok.status_code = 200
+        ok.json.return_value = {"data": {"id": "mt_1"}}
+        ok.raise_for_status.return_value = None
+
+        with patch("app.services.thestatsapi._rate_limiter.acquire", new=AsyncMock()):
+            with patch("asyncio.sleep", new=AsyncMock()) as sleep_mock:
+                http.get = AsyncMock(side_effect=[rate_limited, ok])
+                payload = await client._get(http, "/football/matches/mt_1")
+        self.assertEqual(payload, {"data": {"id": "mt_1"}})
+        sleep_mock.assert_awaited_once_with(1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

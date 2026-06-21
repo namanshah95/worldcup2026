@@ -1,7 +1,9 @@
 from __future__ import annotations
 """TheStatsAPI client (https://api.thestatsapi.com)."""
 
+import asyncio
 import logging
+import time
 import unicodedata
 from datetime import date
 from typing import Any, Optional
@@ -26,6 +28,26 @@ TEAM_ALIASES: dict[str, list[str]] = {
 }
 
 GOAL_EVENT_TYPES = {"goal", "penalty_scored"}
+
+
+class AsyncRateLimiter:
+    """Space requests to stay under TheStatsAPI's per-minute cap (trial: 30/min)."""
+
+    def __init__(self, max_per_minute: int):
+        self._min_interval = 60.0 / max(1, max_per_minute)
+        self._lock = asyncio.Lock()
+        self._next_allowed = 0.0
+
+    async def acquire(self) -> None:
+        async with self._lock:
+            now = time.monotonic()
+            wait = self._next_allowed - now
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._next_allowed = time.monotonic() + self._min_interval
+
+
+_rate_limiter = AsyncRateLimiter(settings.thestatsapi_max_requests_per_minute)
 
 
 def normalize_name(value: str) -> str:
@@ -112,11 +134,50 @@ class TheStatsApiClient:
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.api_key}"}
 
-    async def _get(self, client: httpx.AsyncClient, path: str, **params: Any) -> dict:
+    async def _get(
+        self,
+        client: httpx.AsyncClient,
+        path: str,
+        *,
+        max_retries: int = 3,
+        **params: Any,
+    ) -> dict:
         url = f"{BASE_URL}/{path.lstrip('/')}"
-        response = await client.get(url, headers=self._headers(), params=params, timeout=30.0)
-        response.raise_for_status()
-        return response.json()
+        last_response: Optional[httpx.Response] = None
+
+        for attempt in range(max_retries):
+            await _rate_limiter.acquire()
+            response = await client.get(url, headers=self._headers(), params=params, timeout=30.0)
+            last_response = response
+
+            if response.status_code == 429:
+                retry_after = self._retry_after_seconds(response, attempt)
+                logger.warning(
+                    "TheStatsAPI rate limited on %s (attempt %s/%s), waiting %ss",
+                    path,
+                    attempt + 1,
+                    max_retries,
+                    retry_after,
+                )
+                await asyncio.sleep(retry_after)
+                continue
+
+            response.raise_for_status()
+            return response.json()
+
+        if last_response is not None:
+            last_response.raise_for_status()
+        raise httpx.HTTPStatusError("rate limited", request=httpx.Request("GET", url), response=last_response)
+
+    @staticmethod
+    def _retry_after_seconds(response: httpx.Response, attempt: int) -> float:
+        raw = response.headers.get("Retry-After")
+        if raw:
+            try:
+                return max(float(raw), 1.0)
+            except ValueError:
+                pass
+        return min(60.0, 5.0 * (2**attempt))
 
     async def search_competition(self, client: httpx.AsyncClient, query: str = "world cup") -> Optional[str]:
         if settings.thestatsapi_competition_id:
