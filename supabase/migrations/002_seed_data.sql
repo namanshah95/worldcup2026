@@ -1,8 +1,8 @@
--- Seed match day games (June 21, 2026 - adjust kickoff times as needed)
+-- Seed match day games (June 21, 2026 — New York EDT watch-party kickoffs as UTC)
 INSERT INTO games (id, home_team, away_team, home_flag, away_flag, kickoff_at, attendance_qr_secret, sort_order) VALUES
-  ('esp-sau', 'Spain', 'Saudi Arabia', '🇪🇸', '🇸🇦', '2026-06-21 12:00:00+00', 'att-esp-sau-secret', 1),
-  ('bel-irn', 'Belgium', 'Iran', '🇧🇪', '🇮🇷', '2026-06-21 15:00:00+00', 'att-bel-irn-secret', 2),
-  ('uru-cpv', 'Uruguay', 'Cabo Verde', '🇺🇾', '🇨🇻', '2026-06-21 18:00:00+00', 'att-uru-cpv-secret', 3),
+  ('esp-sau', 'Spain', 'Saudi Arabia', '🇪🇸', '🇸🇦', '2026-06-21 16:00:00+00', 'att-esp-sau-secret', 1),
+  ('bel-irn', 'Belgium', 'Iran', '🇧🇪', '🇮🇷', '2026-06-21 19:00:00+00', 'att-bel-irn-secret', 2),
+  ('uru-cpv', 'Uruguay', 'Cabo Verde', '🇺🇾', '🇨🇻', '2026-06-21 22:00:00+00', 'att-uru-cpv-secret', 3),
   ('nzl-egy', 'New Zealand', 'Egypt', '🇳🇿', '🇪🇬', '2026-06-22 01:00:00+00', 'att-nzl-egy-secret', 4);
 
 -- Bingo event bank: 72 events
@@ -84,35 +84,35 @@ INSERT INTO bingo_events (description, category) VALUES
   ('Both teams score in same half', 'goals'),
   ('Hat-trick scored', 'goals');
 
--- Sample players for captain selection (representative roster per team)
+-- WC 2026 active squads: Spain + Saudi Arabia (MD1 starters + unused squad members)
 INSERT INTO players (id, name, country, position, game_id, previous_opponent, previous_points) VALUES
-  ('esp-alvarez', 'Alvarez', 'Spain', 'FWD', 'esp-sau', 'Brazil', 12),
-  ('esp-morata', 'Morata', 'Spain', 'FWD', 'esp-sau', 'Brazil', 8),
-  ('esp-pedri', 'Pedri', 'Spain', 'MID', 'esp-sau', 'Brazil', 6),
-  ('esp-rodri', 'Rodri', 'Spain', 'MID', 'esp-sau', 'Brazil', 10),
-  ('esp-laporte', 'Laporte', 'Spain', 'DEF', 'esp-sau', 'Brazil', 8),
-  ('esp-simon', 'Simon', 'Spain', 'GK', 'esp-sau', 'Brazil', 8),
-  ('sau-salem', 'Al-Dawsari', 'Saudi Arabia', 'MID', 'esp-sau', 'Argentina', 4),
-  ('sau-alshehri', 'Al-Shehri', 'Saudi Arabia', 'FWD', 'esp-sau', 'Argentina', 6),
-  ('bel-lukaku', 'Lukaku', 'Belgium', 'FWD', 'bel-irn', 'Canada', 10),
-  ('bel-debruyne', 'De Bruyne', 'Belgium', 'MID', 'bel-irn', 'Canada', 14),
-  ('bel-witsel', 'Witsel', 'Belgium', 'MID', 'bel-irn', 'Canada', 4),
-  ('bel-vertonghen', 'Vertonghen', 'Belgium', 'DEF', 'bel-irn', 'Canada', 8),
-  ('bel-courtois', 'Courtois', 'Belgium', 'GK', 'bel-irn', 'Canada', 8),
-  ('irn-taremi', 'Taremi', 'Iran', 'FWD', 'bel-irn', 'USA', 8),
-  ('irn-azmoun', 'Azmoun', 'Iran', 'FWD', 'bel-irn', 'USA', 6),
-  ('irn-ezatolahi', 'Ezatolahi', 'Iran', 'MID', 'bel-irn', 'USA', 2),
-  ('uru-nunez', 'Núñez', 'Uruguay', 'FWD', 'uru-cpv', 'Portugal', 10),
-  ('uru-valverde', 'Valverde', 'Uruguay', 'MID', 'uru-cpv', 'Portugal', 6),
-  ('uru-araujo', 'Araújo', 'Uruguay', 'DEF', 'uru-cpv', 'Portugal', 8),
-  ('uru-rochet', 'Rochet', 'Uruguay', 'GK', 'uru-cpv', 'Portugal', 8),
-  ('cpv-tairu', 'Tairu', 'Cabo Verde', 'FWD', 'uru-cpv', 'Morocco', 4),
-  ('cpv-platini', 'Platini', 'Cabo Verde', 'MID', 'uru-cpv', 'Morocco', 2),
-  ('nzl-wood', 'Wood', 'New Zealand', 'FWD', 'nzl-egy', 'France', 4),
-  ('nzl-rutter', 'Rutter', 'New Zealand', 'MID', 'nzl-egy', 'France', 2),
-  ('egy-salah', 'Salah', 'Egypt', 'FWD', 'nzl-egy', 'England', 14),
-  ('egy-elneny', 'Elneny', 'Egypt', 'MID', 'nzl-egy', 'England', 2),
-  ('egy-hegazi', 'Hegazi', 'Egypt', 'DEF', 'nzl-egy', 'England', 8);
+  ('esp-simon', 'Simón', 'Spain', 'GK', 'esp-sau', 'Cabo Verde', 8),
+  ('esp-llorente', 'Llorente', 'Spain', 'DEF', 'esp-sau', 'Cabo Verde', 8),
+  ('esp-cubarsi', 'Cubarsí', 'Spain', 'DEF', 'esp-sau', 'Cabo Verde', 8),
+  ('esp-laporte', 'Laporte', 'Spain', 'DEF', 'esp-sau', 'Cabo Verde', 8),
+  ('esp-cucurella', 'Cucurella', 'Spain', 'DEF', 'esp-sau', 'Cabo Verde', 8),
+  ('esp-rodri', 'Rodri', 'Spain', 'MID', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-pedri', 'Pedri', 'Spain', 'MID', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-fabian', 'Fabián Ruiz', 'Spain', 'MID', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-yamal', 'Yamal', 'Spain', 'FWD', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-nwilliams', 'N. Williams', 'Spain', 'FWD', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-oyarzabal', 'Oyarzabal', 'Spain', 'FWD', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-gavi', 'Gavi', 'Spain', 'MID', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-ferran', 'Ferran Torres', 'Spain', 'FWD', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-olmo', 'Dani Olmo', 'Spain', 'FWD', 'esp-sau', 'Cabo Verde', 0),
+  ('esp-merino', 'Merino', 'Spain', 'MID', 'esp-sau', 'Cabo Verde', 0),
+  ('sau-owais', 'Al-Owais', 'Saudi Arabia', 'GK', 'esp-sau', 'Uruguay', 0),
+  ('sau-abdulhamid', 'Abdulhamid', 'Saudi Arabia', 'DEF', 'esp-sau', 'Uruguay', 0),
+  ('sau-tambakti', 'Al-Tambakti', 'Saudi Arabia', 'DEF', 'esp-sau', 'Uruguay', 0),
+  ('sau-amri', 'Al-Amri', 'Saudi Arabia', 'DEF', 'esp-sau', 'Uruguay', 10),
+  ('sau-harbi', 'Al-Harbi', 'Saudi Arabia', 'DEF', 'esp-sau', 'Uruguay', 0),
+  ('sau-shamat', 'Abu Al-Shamat', 'Saudi Arabia', 'MID', 'esp-sau', 'Uruguay', 0),
+  ('sau-kanno', 'Kanno', 'Saudi Arabia', 'MID', 'esp-sau', 'Uruguay', 0),
+  ('sau-khaibari', 'Al-Khaibari', 'Saudi Arabia', 'MID', 'esp-sau', 'Uruguay', 0),
+  ('sau-salem', 'Al-Dawsari', 'Saudi Arabia', 'MID', 'esp-sau', 'Uruguay', 0),
+  ('sau-buraikan', 'Al-Buraikan', 'Saudi Arabia', 'FWD', 'esp-sau', 'Uruguay', 0),
+  ('sau-juwayr', 'Al-Juwayr', 'Saudi Arabia', 'FWD', 'esp-sau', 'Uruguay', 0),
+  ('sau-shehri', 'Al-Shehri', 'Saudi Arabia', 'FWD', 'esp-sau', 'Uruguay', 0);
 
 -- Trivia questions (5 per game per half = 40 total)
 INSERT INTO trivia_questions (game_id, half_number, question, options, correct_index, sort_order) VALUES

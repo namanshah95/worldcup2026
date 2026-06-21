@@ -13,7 +13,7 @@ class SportsSyncPollTests(unittest.TestCase):
         game = {
             "id": "bel-irn",
             "status": "scheduled",
-            "kickoff_at": "2026-06-21T19:00:00+00:00",
+            "kickoff_at": "2026-06-21T16:00:00+00:00",
         }
         now = datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
         self.assertIsNone(_thestats_poll_interval_seconds(game, now))

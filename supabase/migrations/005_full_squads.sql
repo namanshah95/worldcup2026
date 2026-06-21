@@ -1,50 +1,53 @@
--- Full starting XIs: 11 players per team (88 total across 8 nations)
+-- WC 2026 active squads: Uruguay, Cabo Verde, New Zealand, Egypt (MD1 starters + unused squad members)
 INSERT INTO players (id, name, country, position, game_id, previous_opponent, previous_points) VALUES
-  -- Spain (8 existing → 11)
-  ('esp-yamal', 'Yamal', 'Spain', 'FWD', 'esp-sau', 'Brazil', 14),
-  ('esp-nwilliams', 'N. Williams', 'Spain', 'FWD', 'esp-sau', 'Brazil', 10),
-  ('esp-cucurella', 'Cucurella', 'Spain', 'DEF', 'esp-sau', 'Brazil', 6),
-
-  -- Saudi Arabia (6 → 11)
-  ('sau-buraijk', 'Al-Buraijk', 'Saudi Arabia', 'DEF', 'esp-sau', 'Argentina', 4),
-  ('sau-amri', 'Al-Amri', 'Saudi Arabia', 'DEF', 'esp-sau', 'Argentina', 4),
-  ('sau-kanno', 'Al-Kanno', 'Saudi Arabia', 'MID', 'esp-sau', 'Argentina', 2),
-  ('sau-albishi', 'Al-Abdullah', 'Saudi Arabia', 'MID', 'esp-sau', 'Argentina', 2),
-  ('sau-alhassoun', 'Al-Hassoun', 'Saudi Arabia', 'FWD', 'esp-sau', 'Argentina', 4),
-
-  -- Belgium (9 → 11)
-  ('bel-tielemans', 'Tielemans', 'Belgium', 'MID', 'bel-irn', 'Canada', 6),
-  ('bel-doku', 'Doku', 'Belgium', 'FWD', 'bel-irn', 'Canada', 8),
-
-  -- Iran (7 → 11)
-  ('irn-moharrami', 'Moharrami', 'Iran', 'DEF', 'bel-irn', 'USA', 4),
-  ('irn-pouraliganji', 'Pouraliganji', 'Iran', 'DEF', 'bel-irn', 'USA', 4),
-  ('irn-shojaei', 'Shojaei', 'Iran', 'MID', 'bel-irn', 'USA', 2),
-  ('irn-gouey', 'Gouey', 'Iran', 'MID', 'bel-irn', 'USA', 2),
-
-  -- Uruguay (7 → 11)
-  ('uru-gimenez', 'Giménez', 'Uruguay', 'DEF', 'uru-cpv', 'Portugal', 8),
-  ('uru-vina', 'Viña', 'Uruguay', 'DEF', 'uru-cpv', 'Portugal', 4),
-  ('uru-ugarte', 'Ugarte', 'Uruguay', 'MID', 'uru-cpv', 'Portugal', 4),
-  ('uru-cavani', 'Cavani', 'Uruguay', 'FWD', 'uru-cpv', 'Portugal', 6),
-
-  -- Cabo Verde (6 → 11)
-  ('cpv-ponck', 'Ponck', 'Cabo Verde', 'DEF', 'uru-cpv', 'Morocco', 4),
-  ('cpv-lopes', 'Lopes', 'Cabo Verde', 'DEF', 'uru-cpv', 'Morocco', 2),
-  ('cpv-semedo', 'Semedo', 'Cabo Verde', 'MID', 'uru-cpv', 'Morocco', 2),
-  ('cpv-cabral', 'Cabral', 'Cabo Verde', 'FWD', 'uru-cpv', 'Morocco', 4),
-  ('cpv-moreira', 'Moreira', 'Cabo Verde', 'GK', 'uru-cpv', 'Morocco', 0),
-
-  -- New Zealand (6 → 11)
-  ('nzl-moss', 'Moss', 'New Zealand', 'GK', 'nzl-egy', 'France', 0),
-  ('nzl-smith', 'Smith', 'New Zealand', 'DEF', 'nzl-egy', 'France', 2),
-  ('nzl-kilkolly', 'Kilkolly', 'New Zealand', 'DEF', 'nzl-egy', 'France', 2),
-  ('nzl-payne', 'Payne', 'New Zealand', 'MID', 'nzl-egy', 'France', 2),
-  ('nzl-just', 'Just', 'New Zealand', 'FWD', 'nzl-egy', 'France', 2),
-
-  -- Egypt (7 → 11)
-  ('egy-abdelmonem', 'Abdelmonem', 'Egypt', 'DEF', 'nzl-egy', 'England', 4),
-  ('egy-zizo', 'Zizo', 'Egypt', 'MID', 'nzl-egy', 'England', 4),
-  ('egy-kouka', 'Kouka', 'Egypt', 'FWD', 'nzl-egy', 'England', 2),
-  ('egy-gabaski', 'Gabaski', 'Egypt', 'GK', 'nzl-egy', 'England', 0)
+  ('uru-muslera', 'Muslera', 'Uruguay', 'GK', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-varela', 'Varela', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-caceres', 'Cáceres', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-olivera', 'Olivera', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-vina', 'Viña', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-valverde', 'Valverde', 'Uruguay', 'MID', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-ugarte', 'Ugarte', 'Uruguay', 'MID', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-bentancur', 'Bentancur', 'Uruguay', 'MID', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-maraujo', 'M. Araújo', 'Uruguay', 'FWD', 'uru-cpv', 'Saudi Arabia', 10),
+  ('uru-vinas', 'Viñas', 'Uruguay', 'FWD', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-nunez', 'Núñez', 'Uruguay', 'FWD', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-gimenez', 'Giménez', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-arrascaeta', 'De Arrascaeta', 'Uruguay', 'MID', 'uru-cpv', 'Saudi Arabia', 0),
+  ('uru-rajo', 'Ronald Araújo', 'Uruguay', 'DEF', 'uru-cpv', 'Saudi Arabia', 0),
+  ('cpv-vozinha', 'Vozinha', 'Cabo Verde', 'GK', 'uru-cpv', 'Spain', 8),
+  ('cpv-moreira', 'Moreira', 'Cabo Verde', 'DEF', 'uru-cpv', 'Spain', 8),
+  ('cpv-pico', 'Pico', 'Cabo Verde', 'DEF', 'uru-cpv', 'Spain', 8),
+  ('cpv-diney', 'Diney', 'Cabo Verde', 'DEF', 'uru-cpv', 'Spain', 8),
+  ('cpv-cabral', 'Cabral', 'Cabo Verde', 'DEF', 'uru-cpv', 'Spain', 8),
+  ('cpv-pina', 'Pina', 'Cabo Verde', 'MID', 'uru-cpv', 'Spain', 0),
+  ('cpv-duarte', 'Duarte', 'Cabo Verde', 'MID', 'uru-cpv', 'Spain', 0),
+  ('cpv-monteiro', 'Monteiro', 'Cabo Verde', 'MID', 'uru-cpv', 'Spain', 0),
+  ('cpv-mendes', 'Mendes', 'Cabo Verde', 'FWD', 'uru-cpv', 'Spain', 0),
+  ('cpv-livramento', 'Livramento', 'Cabo Verde', 'FWD', 'uru-cpv', 'Spain', 0),
+  ('cpv-jovane', 'Jovane Cabral', 'Cabo Verde', 'FWD', 'uru-cpv', 'Spain', 0),
+  ('cpv-rodrigues', 'Garry Rodrigues', 'Cabo Verde', 'MID', 'uru-cpv', 'Spain', 0),
+  ('nzl-crocombe', 'Crocombe', 'New Zealand', 'GK', 'nzl-egy', 'Iran', 0),
+  ('nzl-payne', 'Payne', 'New Zealand', 'DEF', 'nzl-egy', 'Iran', 0),
+  ('nzl-surman', 'Surman', 'New Zealand', 'DEF', 'nzl-egy', 'Iran', 0),
+  ('nzl-boxall', 'Boxall', 'New Zealand', 'DEF', 'nzl-egy', 'Iran', 0),
+  ('nzl-cacace', 'Cacace', 'New Zealand', 'DEF', 'nzl-egy', 'Iran', 0),
+  ('nzl-singh', 'Singh', 'New Zealand', 'MID', 'nzl-egy', 'Iran', 0),
+  ('nzl-bell', 'Bell', 'New Zealand', 'MID', 'nzl-egy', 'Iran', 0),
+  ('nzl-stamenic', 'Stamenić', 'New Zealand', 'MID', 'nzl-egy', 'Iran', 0),
+  ('nzl-just', 'Just', 'New Zealand', 'FWD', 'nzl-egy', 'Iran', 20),
+  ('nzl-wood', 'Wood', 'New Zealand', 'FWD', 'nzl-egy', 'Iran', 0),
+  ('nzl-mccowatt', 'McCowatt', 'New Zealand', 'FWD', 'nzl-egy', 'Iran', 0),
+  ('nzl-rogerson', 'Rogerson', 'New Zealand', 'FWD', 'nzl-egy', 'Iran', 0),
+  ('egy-shobeir', 'Shobeir', 'Egypt', 'GK', 'nzl-egy', 'Belgium', 0),
+  ('egy-hany', 'Hany', 'Egypt', 'DEF', 'nzl-egy', 'Belgium', 0),
+  ('egy-ibrahim', 'Y. Ibrahim', 'Egypt', 'DEF', 'nzl-egy', 'Belgium', 0),
+  ('egy-fathy', 'Fathy', 'Egypt', 'DEF', 'nzl-egy', 'Belgium', 0),
+  ('egy-fatouh', 'Fatouh', 'Egypt', 'DEF', 'nzl-egy', 'Belgium', 0),
+  ('egy-attia', 'Attia', 'Egypt', 'MID', 'nzl-egy', 'Belgium', 0),
+  ('egy-lasheen', 'Lasheen', 'Egypt', 'MID', 'nzl-egy', 'Belgium', 0),
+  ('egy-ziko', 'Ziko', 'Egypt', 'FWD', 'nzl-egy', 'Belgium', 0),
+  ('egy-salah', 'Salah', 'Egypt', 'FWD', 'nzl-egy', 'Belgium', 0),
+  ('egy-ashour', 'Ashour', 'Egypt', 'MID', 'nzl-egy', 'Belgium', 10),
+  ('egy-marmoush', 'Marmoush', 'Egypt', 'FWD', 'nzl-egy', 'Belgium', 0),
+  ('egy-trezeguet', 'Trézéguet', 'Egypt', 'FWD', 'nzl-egy', 'Belgium', 0)
 ON CONFLICT (id) DO NOTHING;

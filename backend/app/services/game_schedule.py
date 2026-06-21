@@ -64,11 +64,14 @@ def effective_game_state(game: dict, now: datetime | None = None) -> tuple[str, 
     """
     Resolve status for trivia and splash messaging.
 
-    Sportmonks DB status wins when a fixture is linked and has left 'scheduled'.
-    Otherwise use kickoff-based estimates so trivia still opens at half-time
-    without manual admin updates.
+    Watch-party kickoff_at is authoritative until that time — API status is ignored
+    early so a live real-world kickoff does not unlock pick'em/trivia before the party.
+    After kickoff, linked API status wins when it has left 'scheduled'.
     """
     reference = now or utcnow()
+    if reference < parse_kickoff(game["kickoff_at"]):
+        return "scheduled", 1
+
     db_status = game.get("status") or "scheduled"
     db_half = game.get("current_half") or 1
 

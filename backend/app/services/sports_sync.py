@@ -237,6 +237,9 @@ async def sync_sportmonks() -> None:
 
 
 async def _sync_thestats_game(game: dict, match: dict, live: dict, player_stats: list, timeline: list) -> None:
+    if utcnow() < parse_kickoff(game["kickoff_at"]):
+        return
+
     db = get_supabase()
     prev_status = game["status"]
     live_meta = live.get("meta") if live else None
