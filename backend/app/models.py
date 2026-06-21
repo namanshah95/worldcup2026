@@ -168,6 +168,17 @@ class AdminPlayerStatsRequest(BaseModel):
     clean_sheet: bool = False
 
 
+class AdminResetUserRequest(BaseModel):
+    email: EmailStr
+
+
+class AdminResetUserResponse(BaseModel):
+    email: str
+    display_name: str
+    unregistered: bool
+    deleted: dict[str, int]
+
+
 CaptainResponse.model_rebuild()
 BingoBoardResponse.model_rebuild()
 

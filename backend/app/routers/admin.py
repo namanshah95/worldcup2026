@@ -5,9 +5,15 @@ from fastapi import APIRouter, Header, HTTPException
 
 from app.config import settings
 from app.database import get_supabase
-from app.models import AdminPlayerStatsRequest, AdminUpdateScoreRequest
+from app.models import (
+    AdminPlayerStatsRequest,
+    AdminResetUserRequest,
+    AdminResetUserResponse,
+    AdminUpdateScoreRequest,
+)
 from app.services.scoring import process_game_finished
 from app.services.sports_sync import link_fixtures, sync_match_statuses
+from app.services.user_admin import reset_user_by_email
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -75,3 +81,10 @@ async def sportmonks_sync(x_admin_secret: str = Header(...)):
     db = get_supabase()
     games = db.table("games").select("id, home_team, away_team, status, home_score, away_score, sportmonks_fixture_id").execute().data
     return {"games": games}
+
+
+@router.post("/users/reset", response_model=AdminResetUserResponse)
+def reset_user(body: AdminResetUserRequest, x_admin_secret: str = Header(...)):
+    verify_admin(x_admin_secret)
+    result = reset_user_by_email(body.email)
+    return AdminResetUserResponse(**result)
