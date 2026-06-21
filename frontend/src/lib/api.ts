@@ -114,6 +114,8 @@ export const api = {
   getBingo: () => request<{ squares: BingoSquare[]; marks: number[]; has_bingo: boolean; is_first_winner: boolean }>('/api/bingo/board'),
   markBingo: (square_index: number) =>
     request<{ squares: BingoSquare[]; marks: number[]; has_bingo: boolean; is_first_winner: boolean }>('/api/bingo/mark', { method: 'POST', body: JSON.stringify({ square_index }) }),
+  unmarkBingo: (square_index: number) =>
+    request<{ squares: BingoSquare[]; marks: number[]; has_bingo: boolean; is_first_winner: boolean }>('/api/bingo/unmark', { method: 'POST', body: JSON.stringify({ square_index }) }),
 
   getTriviaSession: () => request<{
     is_active: boolean;

@@ -16,9 +16,9 @@ export default function BingoPage() {
   useEffect(() => { load(); }, []);
 
   const toggle = async (idx: number, sq: BingoSquare) => {
-    if (sq.is_free || sq.marked || hasBingo) return;
+    if (sq.is_free || hasBingo) return;
     try {
-      const b = await api.markBingo(idx);
+      const b = sq.marked ? await api.unmarkBingo(idx) : await api.markBingo(idx);
       setSquares(b.squares);
       setHasBingo(b.has_bingo);
       setIsFirst(b.is_first_winner);
@@ -55,7 +55,7 @@ export default function BingoPage() {
       </div>
 
       <p className="text-center text-gray-400 text-sm mt-6">
-        Tap squares when you spot the event across any of today's 4 matches. First to 5 in a row wins 20 pts!
+        Tap to mark an event, tap again to undo. First to 5 in a row wins 20 pts!
       </p>
     </PageShell>
   );

@@ -81,3 +81,31 @@ def mark_square(body: BingoMarkRequest, user: dict = Depends(get_current_user)):
         award_bingo(user["email"], is_first)
 
     return get_board(user)
+
+
+@router.post("/unmark", response_model=BingoBoardResponse)
+def unmark_square(body: BingoMarkRequest, user: dict = Depends(get_current_user)):
+    db = get_supabase()
+    if body.square_index == 12:
+        raise HTTPException(status_code=400, detail="Free space cannot be unmarked")
+
+    board = db.table("bingo_boards").select("*").eq("user_email", user["email"]).single().execute().data
+    if board.get("completed_at"):
+        raise HTTPException(status_code=403, detail="Bingo already completed")
+
+    existing = (
+        db.table("bingo_marks")
+        .select("*")
+        .eq("user_email", user["email"])
+        .eq("square_index", body.square_index)
+        .execute()
+        .data
+    )
+    if not existing:
+        raise HTTPException(status_code=400, detail="Square is not marked")
+
+    db.table("bingo_marks").delete().eq("user_email", user["email"]).eq(
+        "square_index", body.square_index
+    ).execute()
+
+    return get_board(user)
