@@ -55,7 +55,7 @@ export default function BingoPage() {
       </div>
 
       <p className="text-center text-gray-400 text-sm mt-6">
-        Tap squares when you spot the event. First to 5 in a row wins 20 pts!
+        Tap squares when you spot the event across any of today's 4 matches. First to 5 in a row wins 20 pts!
       </p>
     </PageShell>
   );

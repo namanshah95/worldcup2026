@@ -88,7 +88,9 @@ export default function CaptainPage() {
 
   return (
     <PageShell title="Select Captain" backTo="/">
-      <p className="text-sm text-gray-400 mb-4">Choose one player for the entire match day. This cannot be changed!</p>
+      <p className="text-sm text-gray-400 mb-4">
+        Choose one player from any of the 8 teams playing today. This cannot be changed!
+      </p>
 
       <input
         type="text"

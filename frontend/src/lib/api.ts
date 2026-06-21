@@ -115,9 +115,26 @@ export const api = {
   markBingo: (square_index: number) =>
     request<{ squares: BingoSquare[]; marks: number[]; has_bingo: boolean; is_first_winner: boolean }>('/api/bingo/mark', { method: 'POST', body: JSON.stringify({ square_index }) }),
 
+  getTriviaSession: () => request<{
+    is_active: boolean;
+    game_id: string;
+    game_label: string;
+    half_number: number;
+    message: string;
+    questions: Array<{
+      id: number;
+      question: string;
+      options: string[];
+      sort_order: number;
+      answered: boolean;
+      selected_index: number | null;
+      is_correct: boolean | null;
+    }>;
+  }>('/api/trivia/session'),
   getTrivia: (gameId: string) => request<{
     is_active: boolean;
     game_id: string;
+    game_label: string;
     half_number: number;
     message: string;
     questions: Array<{

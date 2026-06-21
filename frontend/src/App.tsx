@@ -28,14 +28,18 @@ function AppRoutes() {
     <Routes>
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-      <Route path="/game/:gameId/pick-em" element={<ProtectedRoute><PickEmPage /></ProtectedRoute>} />
-      <Route path="/game/:gameId/captain" element={<ProtectedRoute><CaptainPage /></ProtectedRoute>} />
-      <Route path="/game/:gameId/bingo" element={<ProtectedRoute><BingoPage /></ProtectedRoute>} />
-      <Route path="/game/:gameId/trivia" element={<ProtectedRoute><TriviaPage /></ProtectedRoute>} />
+      <Route path="/pick-em" element={<ProtectedRoute><PickEmPage /></ProtectedRoute>} />
       <Route path="/captain" element={<ProtectedRoute><CaptainPage /></ProtectedRoute>} />
+      <Route path="/bingo" element={<ProtectedRoute><BingoPage /></ProtectedRoute>} />
+      <Route path="/trivia" element={<ProtectedRoute><TriviaPage /></ProtectedRoute>} />
       <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
       <Route path="/scoring" element={<ProtectedRoute><ScoringPage /></ProtectedRoute>} />
       <Route path="/attendance" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
+      {/* Legacy routes redirect to universal screens */}
+      <Route path="/game/:gameId/pick-em" element={<Navigate to="/pick-em" replace />} />
+      <Route path="/game/:gameId/captain" element={<Navigate to="/captain" replace />} />
+      <Route path="/game/:gameId/bingo" element={<Navigate to="/bingo" replace />} />
+      <Route path="/game/:gameId/trivia" element={<Navigate to="/trivia" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

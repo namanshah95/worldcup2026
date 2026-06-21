@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { PageShell } from '../components/UI';
 import { api } from '../lib/api';
 
@@ -14,16 +13,18 @@ interface Question {
 }
 
 export default function TriviaPage() {
-  const { gameId } = useParams<{ gameId: string }>();
   const [isActive, setIsActive] = useState(false);
   const [message, setMessage] = useState('');
+  const [gameId, setGameId] = useState('');
+  const [gameLabel, setGameLabel] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
 
   const load = () => {
-    if (!gameId) return;
-    api.getTrivia(gameId).then((t) => {
+    api.getTriviaSession().then((t) => {
       setIsActive(t.is_active);
       setMessage(t.message);
+      setGameId(t.game_id);
+      setGameLabel(t.game_label);
       setQuestions(t.questions);
     });
   };
@@ -32,7 +33,7 @@ export default function TriviaPage() {
     load();
     const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
-  }, [gameId]);
+  }, []);
 
   const answer = async (q: Question, idx: number) => {
     if (!gameId || q.answered) return;
@@ -58,7 +59,10 @@ export default function TriviaPage() {
 
   return (
     <PageShell title="Half-Time Trivia" backTo="/">
-      <p className="text-center text-amber-400 text-sm mb-6 font-semibold">⏱ Live now — answer before 2nd half!</p>
+      <div className="text-center mb-6">
+        <p className="text-amber-400 text-sm font-semibold">⏱ Live now — answer before the 2nd half!</p>
+        <p className="text-gray-300 text-sm mt-1">{gameLabel}</p>
+      </div>
       <div className="space-y-6">
         {questions.map((q) => (
           <div key={q.id} className="rounded-xl bg-card p-4">

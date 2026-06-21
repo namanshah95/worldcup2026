@@ -105,6 +105,7 @@ class TriviaQuestionResponse(BaseModel):
 class TriviaSessionResponse(BaseModel):
     is_active: bool
     game_id: str
+    game_label: str = ""
     half_number: int
     message: str
     questions: list[TriviaQuestionResponse]

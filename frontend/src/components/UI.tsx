@@ -46,9 +46,9 @@ export function GameRulesModal({ open, onClose }: { open: boolean; onClose: () =
   return (
     <Modal open={open} onClose={onClose} title="🏆 Watch Party Games" confirmLabel="Let's Go!" onConfirm={onClose}>
       <ul className="space-y-3 list-none">
-        <li><strong className="text-gold">Pick'ems</strong> — Predict the score before kickoff. Earn points for winner, score sides, and exact score.</li>
-        <li><strong className="text-gold">Captain</strong> — Pick one player for the day. Goals, assists, and clean sheets earn bonus points.</li>
-        <li><strong className="text-gold">Bingo</strong> — Mark off events as you see them. First to 5 in a row wins big!</li>
+        <li><strong className="text-gold">Pick'ems</strong> — Predict the score for all 4 matches before kickoff.</li>
+        <li><strong className="text-gold">Captain</strong> — Pick one player from any of the 8 teams playing today.</li>
+        <li><strong className="text-gold">Bingo</strong> — Mark off events as you see them across all matches.</li>
         <li><strong className="text-gold">Trivia</strong> — Answer 5 questions during each half-time break.</li>
         <li><strong className="text-gold">Attendance</strong> — Scan the QR code in the room for a bonus each game.</li>
       </ul>
