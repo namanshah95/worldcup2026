@@ -13,7 +13,10 @@ RUN npm run build
 
 FROM nginx:alpine
 ENV PORT=8080
+# Override on Railway: BACKEND_URL=https://your-backend.up.railway.app
 ENV BACKEND_URL=http://127.0.0.1:8000
+COPY docker-entrypoint.d/40-check-backend-url.sh /docker-entrypoint.d/40-check-backend-url.sh
+RUN chmod +x /docker-entrypoint.d/40-check-backend-url.sh
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 CMD ["nginx", "-g", "daemon off;"]
