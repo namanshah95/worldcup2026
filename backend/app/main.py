@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sync_task = None
-    if settings.sportmonks_enabled:
+    if settings.sports_sync_enabled:
         sync_task = asyncio.create_task(run_sync_loop())
-        logger.info("Sportmonks auto-sync enabled")
+        logger.info("%s auto-sync enabled", settings.sports_api_provider)
     else:
-        logger.info("Sportmonks auto-sync disabled (set SPORTS_API_KEY to enable)")
+        logger.info("Sports auto-sync disabled (set SPORTS_API_KEY and SPORTS_API_PROVIDER)")
     yield
     if sync_task:
         sync_task.cancel()
@@ -56,5 +56,8 @@ app.include_router(admin.router, prefix="/api")
 def health():
     return {
         "status": "ok",
+        "sports_provider": settings.sports_api_provider if settings.sports_sync_enabled else None,
+        "sports_sync": settings.sports_sync_enabled,
         "sportmonks_sync": settings.sportmonks_enabled,
+        "thestatsapi_sync": settings.thestatsapi_enabled,
     }

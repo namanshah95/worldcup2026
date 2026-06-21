@@ -1,5 +1,4 @@
 from __future__ import annotations
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -7,6 +6,7 @@ from app.database import get_supabase
 from app.deps import get_current_user
 from app.models import TriviaAnswerRequest, TriviaQuestionResponse, TriviaSessionResponse
 from app.services.scoring import add_score_event, award_trivia_perfect_bonus
+from app.services.game_schedule import effective_game_state, parse_kickoff, utcnow as schedule_utcnow
 
 router = APIRouter(prefix="/trivia", tags=["trivia"])
 
@@ -16,10 +16,17 @@ def _game_label(game: dict) -> str:
 
 
 def _format_kickoff(kickoff_at: str) -> str:
-    dt = datetime.fromisoformat(kickoff_at.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+    dt = parse_kickoff(kickoff_at)
     return dt.strftime("%I:%M %p").lstrip("0")
+
+
+def _games_with_effective_state(games: list[dict]) -> list[dict]:
+    now = schedule_utcnow()
+    enriched = []
+    for game in games:
+        status, half = effective_game_state(game, now)
+        enriched.append({**game, "status": status, "current_half": half})
+    return enriched
 
 
 def _build_session(game: dict, user: dict, is_active: bool, message: str) -> TriviaSessionResponse:
@@ -79,6 +86,15 @@ def _waiting_message(games: list[dict]) -> tuple[dict, str]:
     live = [g for g in games if g["status"] == "live"]
     if live:
         game = live[0]
+        if (game.get("current_half") or 1) >= 2:
+            upcoming = [g for g in games if g["status"] == "scheduled"]
+            if upcoming:
+                next_game = upcoming[0]
+                time_str = _format_kickoff(next_game["kickoff_at"])
+                return (
+                    next_game,
+                    f"Next trivia opens at half-time of {_game_label(next_game)} (kickoff {time_str}).",
+                )
         return game, f"Trivia unlocks at half-time of {_game_label(game)}. Check back during the break!"
 
     upcoming = [g for g in games if g["status"] == "scheduled"]
@@ -91,8 +107,17 @@ def _waiting_message(games: list[dict]) -> tuple[dict, str]:
         )
 
     finished = [g for g in games if g["status"] == "finished"]
-    if finished and len(finished) == len(games):
-        return finished[-1], "All matches are complete. Thanks for playing!"
+    if finished:
+        still_scheduled = [g for g in games if g["status"] == "scheduled"]
+        if still_scheduled:
+            game = still_scheduled[0]
+            time_str = _format_kickoff(game["kickoff_at"])
+            return (
+                game,
+                f"Next trivia opens at half-time of {_game_label(game)} (kickoff {time_str}).",
+            )
+        if len(finished) == len(games):
+            return finished[-1], "All matches are complete. Thanks for playing!"
 
     return games[0] if games else {"id": "", "home_team": "", "away_team": "", "current_half": 1}, "Trivia unlocks at the next half-time break."
 
@@ -100,7 +125,9 @@ def _waiting_message(games: list[dict]) -> tuple[dict, str]:
 @router.get("/session", response_model=TriviaSessionResponse)
 def get_trivia_session(user: dict = Depends(get_current_user)):
     db = get_supabase()
-    games = db.table("games").select("*").order("sort_order").execute().data
+    games = _games_with_effective_state(
+        db.table("games").select("*").order("sort_order").execute().data
+    )
 
     halftime = [g for g in games if g["status"] == "halftime"]
     if halftime:
@@ -122,7 +149,8 @@ def get_trivia(game_id: str, user: dict = Depends(get_current_user)):
     game = db.table("games").select("*").eq("id", game_id).execute().data
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    game = game[0]
+    status, half = effective_game_state(game[0])
+    game = {**game[0], "status": status, "current_half": half}
 
     is_active = game["status"] == "halftime"
     if not is_active:
@@ -145,7 +173,9 @@ def get_trivia(game_id: str, user: dict = Depends(get_current_user)):
 @router.post("/{game_id}/answer")
 def submit_answer(game_id: str, body: TriviaAnswerRequest, user: dict = Depends(get_current_user)):
     db = get_supabase()
-    game = db.table("games").select("*").eq("id", game_id).single().execute().data
+    raw_game = db.table("games").select("*").eq("id", game_id).single().execute().data
+    status, half = effective_game_state(raw_game)
+    game = {**raw_game, "status": status, "current_half": half}
     if game["status"] != "halftime":
         raise HTTPException(status_code=403, detail="Trivia is only available during half-time")
 

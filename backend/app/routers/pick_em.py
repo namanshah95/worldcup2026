@@ -62,5 +62,5 @@ def save_prediction(game_id: str, body: PickEmRequest, user: dict = Depends(get_
         game_id=game_id,
         home_score=body.home_score,
         away_score=body.away_score,
-        is_locked=False,
+        is_locked=is_game_locked(g["kickoff_at"]),
     )

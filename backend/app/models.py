@@ -61,6 +61,7 @@ class PlayerResponse(BaseModel):
     assists: int
     clean_sheet: bool
     unavailable: bool
+    match_started: bool = False
     is_selectable: bool
 
 
@@ -177,6 +178,10 @@ class AdminResetUserResponse(BaseModel):
     display_name: str
     unregistered: bool
     deleted: dict[str, int]
+
+
+class AdminLinkFixtureRequest(BaseModel):
+    match_id: str = Field(min_length=1)
 
 
 CaptainResponse.model_rebuild()

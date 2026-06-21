@@ -16,7 +16,8 @@ export default function PickEmPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getGames().then(async (g) => {
+    const load = async () => {
+      const g = await api.getGames();
       setGames(g);
       const preds: Record<string, Prediction> = {};
       await Promise.all(
@@ -31,7 +32,10 @@ export default function PickEmPage() {
       );
       setPredictions(preds);
       setLoading(false);
-    });
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const updateScore = (gameId: string, side: 'home' | 'away', value: number) => {
@@ -87,8 +91,10 @@ export default function PickEmPage() {
               <div className="text-center mb-4">
                 <div className="text-3xl mb-1">{game.home_flag} vs {game.away_flag}</div>
                 <h2 className="font-bold">{game.home_team} vs {game.away_team}</h2>
-                {pred.is_locked && (
+                {pred.is_locked ? (
                   <p className="text-amber-400 text-xs mt-1">🔒 Locked — match started</p>
+                ) : (
+                  <p className="text-green-400/80 text-xs mt-1">Open until kickoff</p>
                 )}
               </div>
               <div className="flex justify-around items-center">

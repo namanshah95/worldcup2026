@@ -40,6 +40,8 @@ export default function CaptainPage() {
 
   useEffect(() => {
     if (!isLocked) loadPlayers();
+    const interval = setInterval(loadPlayers, 30000);
+    return () => clearInterval(interval);
   }, [search, country, position, sortBy, isLocked]);
 
   const countriesFromList = countries;
@@ -143,7 +145,11 @@ export default function CaptainPage() {
                   <p className="text-xs text-gray-500">Prev vs {p.previous_opponent}: {p.previous_points} pts</p>
                 )}
               </div>
-              {!p.is_selectable && <span className="text-xs text-gray-500">Unavailable</span>}
+              {!p.is_selectable && (
+                <span className="text-xs text-gray-500">
+                  {p.match_started ? 'Match started' : 'Unavailable'}
+                </span>
+              )}
             </button>
           </li>
         ))}

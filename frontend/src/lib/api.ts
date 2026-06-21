@@ -48,6 +48,7 @@ export interface Player {
   assists: number;
   clean_sheet: boolean;
   unavailable: boolean;
+  match_started: boolean;
   is_selectable: boolean;
 }
 

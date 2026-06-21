@@ -36,10 +36,9 @@ def get_session_expiry() -> datetime:
 
 
 def is_game_locked(kickoff_at: str) -> bool:
-    kickoff = datetime.fromisoformat(kickoff_at.replace("Z", "+00:00"))
-    if kickoff.tzinfo is None:
-        kickoff = kickoff.replace(tzinfo=timezone.utc)
-    return utcnow() >= kickoff
+    from app.services.game_schedule import is_game_locked as _is_game_locked
+
+    return _is_game_locked(kickoff_at, utcnow())
 
 
 def generate_bingo_board(event_ids: list[int]) -> list[int]:

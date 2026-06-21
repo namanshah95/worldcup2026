@@ -75,14 +75,36 @@ class SportmonksClient:
 
     async def get_fixtures_by_date(
         self, client: httpx.AsyncClient, day: date, include: str = "participants;state"
-    ) -> list[dict]:
+    ) -> tuple[list[dict], Optional[str]]:
         payload = await self._get(
             client,
             f"fixtures/date/{day.isoformat()}",
             include=include,
             filters=f"fixtureLeagues:{self.league_id}",
         )
-        return payload.get("data") or []
+        return payload.get("data") or [], payload.get("message")
+
+    async def list_fixtures_for_date(
+        self, client: httpx.AsyncClient, day: date, include: str = "participants;state"
+    ) -> dict:
+        """Fetch fixtures with or without league filter (broader search for debugging)."""
+        with_filter, msg_filtered = await self.get_fixtures_by_date(client, day, include=include)
+        if with_filter:
+            return {"fixtures": with_filter, "api_message": msg_filtered, "league_id": self.league_id}
+
+        without_filter_payload = await self._get(
+            client,
+            f"fixtures/date/{day.isoformat()}",
+            include=include,
+        )
+        all_fixtures = without_filter_payload.get("data") or []
+        return {
+            "fixtures": all_fixtures,
+            "api_message": without_filter_payload.get("message") or msg_filtered,
+            "league_id": self.league_id,
+            "filtered_count": 0,
+            "unfiltered_count": len(all_fixtures),
+        }
 
     async def get_fixture(self, client: httpx.AsyncClient, fixture_id: int, include: str = FIXTURE_INCLUDES) -> dict:
         payload = await self._get(client, f"fixtures/{fixture_id}", include=include)
@@ -226,3 +248,14 @@ def build_player_stats(fixture: dict, player_rows: list[dict]) -> dict[str, dict
 def kickoff_date(kickoff_at: str) -> date:
     dt = datetime.fromisoformat(kickoff_at.replace("Z", "+00:00"))
     return dt.date()
+
+
+def fixture_summary(fixture: dict) -> dict:
+    home, away = extract_participants(fixture)
+    return {
+        "id": fixture.get("id"),
+        "name": fixture.get("name"),
+        "home": (home or {}).get("name"),
+        "away": (away or {}).get("name"),
+        "state_id": fixture.get("state_id") or (fixture.get("state") or {}).get("id"),
+    }

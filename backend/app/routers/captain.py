@@ -39,6 +39,7 @@ def _player_response(p: dict) -> PlayerResponse:
         assists=p.get("assists", 0),
         clean_sheet=p.get("clean_sheet", False),
         unavailable=p.get("unavailable", False),
+        match_started=locked,
         is_selectable=not locked and not p.get("unavailable", False),
     )
 
@@ -91,7 +92,8 @@ def list_players(
                 goals=p.get("goals", 0),
                 assists=p.get("assists", 0),
                 clean_sheet=p.get("clean_sheet", False),
-                unavailable=p.get("unavailable", False) or locked,
+                unavailable=p.get("unavailable", False),
+                match_started=locked,
                 is_selectable=not locked and not p.get("unavailable", False),
             )
         )
@@ -131,6 +133,7 @@ def get_selection(user: dict = Depends(get_current_user)):
             assists=player_data.get("assists", 0),
             clean_sheet=player_data.get("clean_sheet", False),
             unavailable=False,
+            match_started=False,
             is_selectable=False,
         ),
         score_events=[ScoreEventResponse(**e) for e in events],
@@ -173,6 +176,7 @@ def select_captain(body: CaptainSelectRequest, user: dict = Depends(get_current_
             assists=p.get("assists", 0),
             clean_sheet=p.get("clean_sheet", False),
             unavailable=False,
+            match_started=False,
             is_selectable=False,
         ),
         score_events=[],
