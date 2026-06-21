@@ -13,6 +13,7 @@ export default function CaptainPage() {
   const [country, setCountry] = useState('');
   const [position, setPosition] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const [countries, setCountries] = useState<string[]>([]);
   const [confirmPlayer, setConfirmPlayer] = useState<Player | null>(null);
   const [error, setError] = useState('');
 
@@ -32,13 +33,16 @@ export default function CaptainPage() {
         setIsLocked(res.is_locked);
       }
     });
+    api.getPlayers({ sort_by: 'country' }).then((list) => {
+      setCountries([...new Set(list.map((p) => p.country))].sort());
+    });
   }, []);
 
   useEffect(() => {
     if (!isLocked) loadPlayers();
   }, [search, country, position, sortBy, isLocked]);
 
-  const countries = [...new Set(players.map((p) => p.country))].sort();
+  const countriesFromList = countries;
 
   const confirmSelect = async () => {
     if (!confirmPlayer) return;
@@ -100,22 +104,27 @@ export default function CaptainPage() {
         className="w-full rounded-xl bg-card border border-pitch-light/40 px-4 py-3 mb-3 focus:outline-none focus:border-gold"
       />
 
-      <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <select value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg bg-card px-3 py-2 text-sm">
           <option value="">All Countries</option>
-          {countries.map((c) => <option key={c} value={c}>{c}</option>)}
+          {countriesFromList.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={position} onChange={(e) => setPosition(e.target.value)} className="rounded-lg bg-card px-3 py-2 text-sm">
           <option value="">All Positions</option>
           {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-lg bg-card px-3 py-2 text-sm">
-          <option value="name">Name</option>
-          <option value="country">Country</option>
-          <option value="position">Position</option>
-          <option value="previous_points">Prev Points</option>
-        </select>
+        <label className="flex items-center gap-2 text-sm text-gray-400 shrink-0">
+          Sort by
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-lg bg-card px-3 py-2 text-sm text-white">
+            <option value="name">Name</option>
+            <option value="country">Country</option>
+            <option value="position">Position</option>
+            <option value="previous_points">Prev Points</option>
+          </select>
+        </label>
       </div>
+
+      <p className="text-xs text-gray-500 mb-3">{players.length} player{players.length === 1 ? '' : 's'} shown</p>
 
       <ul className="space-y-2">
         {players.map((p) => (

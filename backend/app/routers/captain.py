@@ -1,4 +1,5 @@
 from __future__ import annotations
+import unicodedata
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,6 +10,17 @@ from app.models import CaptainResponse, CaptainSelectRequest, PlayerResponse, Sc
 from app.services.scoring import is_game_locked
 
 router = APIRouter(prefix="/captain", tags=["captain"])
+
+PLAYERS_PAGE_SIZE = 1000
+
+
+def _normalize_name(value: str) -> str:
+    text = unicodedata.normalize("NFKD", value.lower())
+    return "".join(c for c in text if not unicodedata.combining(c))
+
+
+def _matches_search(name: str, query: str) -> bool:
+    return _normalize_name(query) in _normalize_name(name)
 
 
 def _player_response(p: dict) -> PlayerResponse:
@@ -40,7 +52,7 @@ def list_players(
     sort_by: str = Query("name"),
 ):
     db = get_supabase()
-    query = db.table("players").select("*")
+    query = db.table("players").select("*", count="exact").limit(PLAYERS_PAGE_SIZE)
     if country:
         query = query.eq("country", country)
     if position:
@@ -48,8 +60,7 @@ def list_players(
     players = query.execute().data
 
     if search:
-        search_lower = search.lower()
-        players = [p for p in players if p["name"].lower().startswith(search_lower)]
+        players = [p for p in players if _matches_search(p["name"], search)]
 
     games = {g["id"]: g for g in db.table("games").select("*").execute().data}
 
