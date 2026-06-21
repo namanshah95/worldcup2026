@@ -9,6 +9,7 @@ from app.services.game_schedule import (
     estimate_status_from_kickoff,
     effective_game_state,
     is_game_locked,
+    link_search_dates,
 )
 
 
@@ -111,6 +112,16 @@ class GameScheduleTests(unittest.TestCase):
         self.assertEqual(len(finished), 1)
         self.assertEqual(finished[0]["id"], "esp-sau")
         self.assertEqual(upcoming[0]["id"], "bel-irn")
+
+    def test_link_search_dates_includes_adjacent_utc_days(self):
+        """6pm Vancouver (June 21) = 01:00 UTC June 22 — search must include +1 day."""
+        kickoff = "2026-06-22 01:00:00+00"
+        dates = link_search_dates(kickoff)
+        self.assertEqual(dates, [
+            datetime(2026, 6, 21, tzinfo=timezone.utc).date(),
+            datetime(2026, 6, 22, tzinfo=timezone.utc).date(),
+            datetime(2026, 6, 23, tzinfo=timezone.utc).date(),
+        ])
 
 
 if __name__ == "__main__":

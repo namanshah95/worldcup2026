@@ -3,7 +3,7 @@ INSERT INTO games (id, home_team, away_team, home_flag, away_flag, kickoff_at, a
   ('esp-sau', 'Spain', 'Saudi Arabia', '🇪🇸', '🇸🇦', '2026-06-21 12:00:00+00', 'att-esp-sau-secret', 1),
   ('bel-irn', 'Belgium', 'Iran', '🇧🇪', '🇮🇷', '2026-06-21 15:00:00+00', 'att-bel-irn-secret', 2),
   ('uru-cpv', 'Uruguay', 'Cabo Verde', '🇺🇾', '🇨🇻', '2026-06-21 18:00:00+00', 'att-uru-cpv-secret', 3),
-  ('nzl-egy', 'New Zealand', 'Egypt', '🇳🇿', '🇪🇬', '2026-06-21 21:00:00+00', 'att-nzl-egy-secret', 4);
+  ('nzl-egy', 'New Zealand', 'Egypt', '🇳🇿', '🇪🇬', '2026-06-22 01:00:00+00', 'att-nzl-egy-secret', 4);
 
 -- Bingo event bank: 72 events
 -- With 12 guests × 24 squares = 288 picks from 72 events (~4 picks/event avg)

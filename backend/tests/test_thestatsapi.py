@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
 
 from app.services.thestatsapi import (
+    TheStatsApiClient,
     map_match_status,
     match_matches_game,
     parse_scores,
@@ -35,6 +39,24 @@ class TheStatsApiTests(unittest.TestCase):
             "Spain",
             "Saudi Arabia",
         ))
+
+
+class TheStatsApiClientTests(unittest.IsolatedAsyncioTestCase):
+    async def test_live_stats_409_treated_as_unavailable(self):
+        client = TheStatsApiClient(api_key="test-key")
+        http = AsyncMock()
+        response = MagicMock()
+        response.status_code = 409
+        response.text = '{"error":{"message":"Match not live"}}'
+        response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "conflict", request=MagicMock(), response=response
+        )
+
+        with patch.object(client, "_get", side_effect=httpx.HTTPStatusError(
+            "conflict", request=MagicMock(), response=response
+        )):
+            result = await client.get_live_stats(http, "mt_732525756")
+        self.assertEqual(result, {})
 
 
 if __name__ == "__main__":

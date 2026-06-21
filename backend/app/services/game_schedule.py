@@ -11,7 +11,10 @@ def parse_kickoff(kickoff_at: str | datetime) -> datetime:
     if isinstance(kickoff_at, datetime):
         kickoff = kickoff_at
     else:
-        kickoff = datetime.fromisoformat(kickoff_at.replace("Z", "+00:00"))
+        normalized = kickoff_at.replace("Z", "+00:00")
+        if len(normalized) >= 3 and normalized[-3] in "+-" and normalized[-2:].isdigit():
+            normalized = f"{normalized}:00"
+        kickoff = datetime.fromisoformat(normalized)
     if kickoff.tzinfo is None:
         kickoff = kickoff.replace(tzinfo=timezone.utc)
     return kickoff
@@ -19,6 +22,12 @@ def parse_kickoff(kickoff_at: str | datetime) -> datetime:
 
 def kickoff_date(kickoff_at: str | datetime) -> date:
     return parse_kickoff(kickoff_at).date()
+
+
+def link_search_dates(kickoff_at: str | datetime) -> list[date]:
+    """Dates to query when linking — covers fixtures listed on adjacent UTC days."""
+    day = kickoff_date(kickoff_at)
+    return [day - timedelta(days=1), day, day + timedelta(days=1)]
 
 
 def utcnow() -> datetime:

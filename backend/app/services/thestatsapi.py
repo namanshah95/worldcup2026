@@ -149,6 +149,26 @@ class TheStatsApiClient:
 
         return payload.get("data") or [], None
 
+    async def get_matches_for_dates(
+        self, client: httpx.AsyncClient, days: list[date], competition_id: Optional[str] = None
+    ) -> tuple[list[dict], dict[str, list[dict]], list[str]]:
+        """Fetch matches for multiple days, deduped by match id."""
+        merged: dict[str, dict] = {}
+        by_date: dict[str, list[dict]] = {}
+        warnings: list[str] = []
+
+        for day in days:
+            matches, api_message = await self.get_matches_by_date(client, day, competition_id)
+            by_date[day.isoformat()] = matches
+            if api_message:
+                warnings.append(f"{day.isoformat()}: {api_message}")
+            for match in matches:
+                mid = str(match.get("id"))
+                if mid:
+                    merged[mid] = match
+
+        return list(merged.values()), by_date, warnings
+
     async def get_match(self, client: httpx.AsyncClient, match_id: str) -> dict:
         payload = await self._get(client, f"/football/matches/{match_id}")
         return payload.get("data") or {}
@@ -158,7 +178,7 @@ class TheStatsApiClient:
             payload = await self._get(client, f"/football/matches/{match_id}/live-stats")
             return payload.get("data") or {}
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code in (404, 409):
                 return {}
             raise
 
@@ -167,7 +187,7 @@ class TheStatsApiClient:
             payload = await self._get(client, f"/football/matches/{match_id}/player-stats")
             return payload.get("data") or []
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code in (404, 409):
                 return []
             raise
 
@@ -177,7 +197,7 @@ class TheStatsApiClient:
             data = payload.get("data") or {}
             return data.get("events") or []
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code in (404, 409):
                 return []
             raise
 

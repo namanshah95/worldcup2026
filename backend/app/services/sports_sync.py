@@ -9,7 +9,7 @@ import httpx
 
 from app.config import settings
 from app.database import get_supabase
-from app.services.game_schedule import kickoff_date
+from app.services.game_schedule import kickoff_date, link_search_dates
 from app.services.scoring import process_game_finished
 from app.services.sportmonks import (
     SportmonksClient,
@@ -243,17 +243,25 @@ async def link_fixtures_thestatsapi() -> dict:
     if not settings.thestatsapi_enabled:
         return {
             "linked": {},
+            "already_linked": {},
             "unlinked": [],
             "fixtures_by_date": {},
             "warnings": ["TheStatsAPI not configured — set SPORTS_API_PROVIDER=thestatsapi"],
         }
 
     db = get_supabase()
+    all_games = db.table("games").select("*").execute().data
+    already_linked = {
+        g["id"]: game_external_match_id(g)
+        for g in all_games
+        if game_external_match_id(g) and not _game_needs_link(g)
+    }
+
     client = TheStatsApiClient()
-    games = [g for g in db.table("games").select("*").execute().data if _game_needs_link(g)]
+    games = [g for g in all_games if _game_needs_link(g)]
     linked: dict[str, str] = {}
     unlinked: list[dict] = []
-    fixtures_by_date: dict[str, list[dict]] = {}
+    fixtures_by_date: dict[str, list] = {}
     warnings: list[str] = []
     competition_id: Optional[str] = settings.thestatsapi_competition_id or None
 
@@ -264,16 +272,27 @@ async def link_fixtures_thestatsapi() -> dict:
 
         dates_seen: dict[str, list[dict]] = {}
         for game in games:
-            day = kickoff_date(game["kickoff_at"]).isoformat()
-            if day not in dates_seen:
-                matches, api_message = await client.get_matches_by_date(http, kickoff_date(game["kickoff_at"]), competition_id)
-                dates_seen[day] = matches
-                fixtures_by_date[day] = [match_summary(m) for m in matches]
-                if api_message:
-                    warnings.append(f"{day}: {api_message}")
+            search_days = link_search_dates(game["kickoff_at"])
+            for day in search_days:
+                key = day.isoformat()
+                if key not in dates_seen:
+                    matches, api_message = await client.get_matches_by_date(http, day, competition_id)
+                    dates_seen[key] = matches
+                    fixtures_by_date[key] = [match_summary(m) for m in matches]
+                    if api_message:
+                        warnings.append(f"{key}: {api_message}")
+
+            candidate_matches: list[dict] = []
+            seen_ids: set[str] = set()
+            for day in search_days:
+                for match in dates_seen.get(day.isoformat(), []):
+                    mid = str(match.get("id"))
+                    if mid and mid not in seen_ids:
+                        seen_ids.add(mid)
+                        candidate_matches.append(match)
 
             matched = False
-            for match in dates_seen[day]:
+            for match in candidate_matches:
                 if match_matches_game(match, game["home_team"], game["away_team"]):
                     match_id = str(match["id"])
                     db.table("games").update({"external_match_id": match_id}).eq("id", game["id"]).execute()
@@ -288,21 +307,23 @@ async def link_fixtures_thestatsapi() -> dict:
                         "game_id": game["id"],
                         "home_team": game["home_team"],
                         "away_team": game["away_team"],
-                        "kickoff_date": day,
-                        "fixtures_on_date": len(dates_seen[day]),
+                        "kickoff_date": kickoff_date(game["kickoff_at"]).isoformat(),
+                        "search_dates": [d.isoformat() for d in search_days],
+                        "fixtures_found": len(candidate_matches),
                     }
                 )
 
-    if unlinked and not warnings:
+    if unlinked and not any("Could not find" in w for w in warnings):
         warnings.append(
-            "Matches were returned but no team-name match. "
-            "Your watch-party fixtures may differ from the real World Cup schedule — "
-            "link manually via POST /api/admin/sports/link/{game_id}."
+            "Some games could not be auto-linked. West-coast evening kickoffs often appear on the "
+            "next UTC day — re-run /sports/link after migration 008, or link manually via "
+            "POST /api/admin/sports/link/{game_id}."
         )
 
     return {
         "provider": "thestatsapi",
         "linked": linked,
+        "already_linked": already_linked,
         "unlinked": unlinked,
         "fixtures_by_date": fixtures_by_date,
         "warnings": warnings,
@@ -330,12 +351,24 @@ async def sync_thestatsapi() -> None:
                 match = await client.get_match(http, match_id)
                 if not match:
                     continue
-                live = await client.get_live_stats(http, match_id)
-                player_stats = await client.get_player_stats(http, match_id)
-                timeline = await client.get_timeline(http, match_id)
+                api_status = (match.get("status") or "scheduled").lower()
+                live: dict = {}
+                player_stats: list = []
+                timeline: list = []
+                if api_status == "live":
+                    live = await client.get_live_stats(http, match_id)
+                if api_status in ("live", "finished"):
+                    player_stats = await client.get_player_stats(http, match_id)
+                    timeline = await client.get_timeline(http, match_id)
                 await _sync_thestats_game(game, match, live, player_stats, timeline)
             except httpx.HTTPStatusError as exc:
-                logger.warning("TheStatsAPI HTTP error for game %s: %s", game["id"], exc.response.status_code)
+                body = exc.response.text[:300] if exc.response.text else ""
+                logger.warning(
+                    "TheStatsAPI HTTP error for game %s: %s %s",
+                    game["id"],
+                    exc.response.status_code,
+                    body,
+                )
             except Exception as exc:
                 logger.warning("Failed to sync game %s: %s", game["id"], exc)
 
