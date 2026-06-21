@@ -32,6 +32,11 @@ class TheStatsApiTests(unittest.TestCase):
         live_meta = {"home_goals": 2, "away_goals": 1}
         self.assertEqual(parse_scores(match, live_meta), (2, 1))
 
+    def test_missing_scores_return_none(self):
+        match = {"status": "finished", "score": {}}
+        self.assertIsNone(parse_scores(match))
+        self.assertIsNone(parse_scores(match, {}))
+
     def test_team_matching(self):
         self.assertTrue(team_matches("Cabo Verde", "Cape Verde"))
         self.assertTrue(match_matches_game(

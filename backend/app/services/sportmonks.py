@@ -139,25 +139,30 @@ def fixture_matches_game(fixture: dict, home_team: str, away_team: str) -> bool:
     return team_matches(home_team, home.get("name", "")) and team_matches(away_team, away.get("name", ""))
 
 
-def parse_scores(fixture: dict) -> tuple[int, int]:
+def parse_scores(fixture: dict) -> Optional[tuple[int, int]]:
     home, away = extract_participants(fixture)
     if not home or not away:
-        return 0, 0
+        return None
 
     home_id = home["id"]
     away_id = away["id"]
-    home_score, away_score = 0, 0
+    home_score: Optional[int] = None
+    away_score: Optional[int] = None
 
     for entry in fixture.get("scores") or []:
         if entry.get("description") != "CURRENT":
             continue
         participant_id = entry.get("participant_id")
-        goals = (entry.get("score") or {}).get("goals", 0)
+        goals = (entry.get("score") or {}).get("goals")
+        if goals is None:
+            continue
         if participant_id == home_id:
-            home_score = goals
+            home_score = int(goals)
         elif participant_id == away_id:
-            away_score = goals
+            away_score = int(goals)
 
+    if home_score is None or away_score is None:
+        return None
     return home_score, away_score
 
 
@@ -173,7 +178,8 @@ def build_player_stats(fixture: dict, player_rows: list[dict]) -> dict[str, dict
 
     home_id = home["id"]
     away_id = away["id"]
-    home_score, away_score = parse_scores(fixture)
+    parsed = parse_scores(fixture)
+    home_score, away_score = parsed if parsed is not None else (0, 0)
 
     # Map sportmonks player id -> internal player id
     sm_to_internal: dict[int, str] = {}

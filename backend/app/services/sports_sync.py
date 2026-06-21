@@ -99,7 +99,12 @@ async def _sync_sportmonks_game(game: dict, fixture: dict) -> None:
     prev_state = game.get("sportmonks_last_state_id")
     prev_status = game["status"]
 
-    home_score, away_score = parse_sportmonks_scores(fixture)
+    parsed_scores = parse_sportmonks_scores(fixture)
+    if parsed_scores is not None:
+        home_score, away_score = parsed_scores
+    else:
+        home_score, away_score = game.get("home_score", 0), game.get("away_score", 0)
+
     status = map_state(state_id)
     current_half = _sportmonks_current_half(state_id, prev_state)
 
@@ -244,7 +249,11 @@ async def _sync_thestats_game(game: dict, match: dict, live: dict, player_stats:
     prev_status = game["status"]
     live_meta = live.get("meta") if live else None
     status, current_half = map_match_status(match, live_meta)
-    home_score, away_score = parse_thestats_scores(match, live_meta)
+    parsed_scores = parse_thestats_scores(match, live_meta)
+    if parsed_scores is not None:
+        home_score, away_score = parsed_scores
+    else:
+        home_score, away_score = game.get("home_score", 0), game.get("away_score", 0)
 
     db.table("games").update(
         {

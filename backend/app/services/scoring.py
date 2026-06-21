@@ -118,9 +118,12 @@ def score_captain_for_game(game_id: str) -> None:
             add_score_event(email, "Captain", f"{name}: Clean sheet", 8, game_id)
 
 
-def score_all_pick_ems_for_game(game_id: str) -> None:
+def score_all_pick_ems_for_game(game_id: str, *, replace: bool = False) -> None:
     db = get_supabase()
     game = db.table("games").select("*").eq("id", game_id).single().execute().data
+    if game.get("status") != "finished":
+        return
+
     predictions = db.table("pick_em_predictions").select("*").eq("game_id", game_id).execute().data
 
     existing = (
@@ -132,11 +135,18 @@ def score_all_pick_ems_for_game(game_id: str) -> None:
         .execute()
         .data
     )
-    if existing:
+    if existing and not replace:
         return
+    if existing and replace:
+        db.table("score_events").delete().eq("game_id", game_id).eq("source", "Pick'ems").execute()
 
     for pred in predictions:
         score_pick_em(pred["user_email"], game, pred)
+
+
+def rescore_pick_ems_for_game(game_id: str) -> None:
+    """Re-award pick'em points from current final scores (fixes bad first-pass scoring)."""
+    score_all_pick_ems_for_game(game_id, replace=True)
 
 
 def process_game_finished(game_id: str) -> None:

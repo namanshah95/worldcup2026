@@ -13,7 +13,7 @@ from app.models import (
     AdminResetUserResponse,
     AdminUpdateScoreRequest,
 )
-from app.services.scoring import process_game_finished
+from app.services.scoring import process_game_finished, rescore_pick_ems_for_game
 from app.services.sportmonks import SportmonksClient, fixture_summary
 from app.services.sports_sync import link_fixture_manual, link_fixtures, sync_match_statuses
 from app.services.thestatsapi import TheStatsApiClient, match_summary
@@ -39,7 +39,7 @@ def _require_sports_sync():
 def update_game(game_id: str, body: AdminUpdateScoreRequest, x_admin_secret: str = Header(...)):
     verify_admin(x_admin_secret)
     db = get_supabase()
-    prev = db.table("games").select("status").eq("id", game_id).single().execute().data
+    prev = db.table("games").select("*").eq("id", game_id).single().execute().data
 
     db.table("games").update(
         {
@@ -52,8 +52,25 @@ def update_game(game_id: str, body: AdminUpdateScoreRequest, x_admin_secret: str
 
     if body.status == "finished" and prev.get("status") != "finished":
         process_game_finished(game_id)
+    elif body.status == "finished" and (
+        body.home_score != prev.get("home_score") or body.away_score != prev.get("away_score")
+    ):
+        rescore_pick_ems_for_game(game_id)
 
     return {"ok": True}
+
+
+@router.post("/games/{game_id}/rescore-pick-em")
+def rescore_pick_em(game_id: str, x_admin_secret: str = Header(...)):
+    verify_admin(x_admin_secret)
+    db = get_supabase()
+    game = db.table("games").select("id, status").eq("id", game_id).single().execute().data
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if game.get("status") != "finished":
+        raise HTTPException(status_code=400, detail="Game must be finished before rescoring pick'ems")
+    rescore_pick_ems_for_game(game_id)
+    return {"ok": True, "game_id": game_id}
 
 
 @router.patch("/players/{player_id}")

@@ -84,7 +84,8 @@ def match_matches_game(match: dict, home_team: str, away_team: str) -> bool:
     return team_matches(home_team, name) and team_matches(away_team, name)
 
 
-def parse_scores(match: dict, live_meta: Optional[dict] = None) -> tuple[int, int]:
+def parse_scores(match: dict, live_meta: Optional[dict] = None) -> Optional[tuple[int, int]]:
+    """Return explicit scores only — None when the API omits them (never default to 0-0)."""
     if live_meta:
         home = live_meta.get("home_goals")
         away = live_meta.get("away_goals")
@@ -92,17 +93,18 @@ def parse_scores(match: dict, live_meta: Optional[dict] = None) -> tuple[int, in
             return int(home), int(away)
 
     score = match.get("score") or {}
-    home = score.get("home")
-    away = score.get("away")
-    if home is not None and away is not None:
-        return int(home), int(away)
+    if "home" in score and "away" in score and score["home"] is not None and score["away"] is not None:
+        return int(score["home"]), int(score["away"])
 
     final_score = score.get("final_score") or {}
-    home = final_score.get("home")
-    away = final_score.get("away")
-    if home is not None and away is not None:
-        return int(home), int(away)
-    return 0, 0
+    if (
+        "home" in final_score
+        and "away" in final_score
+        and final_score["home"] is not None
+        and final_score["away"] is not None
+    ):
+        return int(final_score["home"]), int(final_score["away"])
+    return None
 
 
 def map_match_status(match: dict, live_meta: Optional[dict] = None) -> tuple[str, int]:
@@ -273,7 +275,8 @@ def build_player_stats(
     """Return captain stats keyed by internal player id."""
     home = (match.get("home_team") or {}).get("name", "")
     away = (match.get("away_team") or {}).get("name", "")
-    home_score, away_score = parse_scores(match)
+    parsed = parse_scores(match)
+    home_score, away_score = parsed if parsed is not None else (0, 0)
 
     id_to_internal: dict[str, str] = {}
     name_to_internal: dict[str, str] = {}
